@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Eagle Hotel - Home Page</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+
+      /* Table Styles */
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+
+      .table th,
+      .table td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: center;
+      }
+
+      .table th {
+        background-color: #f8f8f8;
+        color: #333;
+      }
+
+      /* Button Styles */
+      .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        color: #fff;
+        background-color: #225cce;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        margin-top: 15px;
+      }
+
+      .btn:hover {
+        background-color: #043c8b;
+      }
+
+      /* Select dropdown styling */
+      select {
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Select Your Room</h1>
+      <form action="{{ url_for('room_selection') }}" method="POST">
+      <input type="hidden" name="guest_id" value="{{ guest_id }}">        
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Room Type</th>
+                        <th>Price per Night</th>
+                        <th>Select Room Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- King Room -->
+                    <tr>
+                        <td>King Room</td>
+                        <td>$200</td>
+                        <td>
+                            <select name="king_room_quantity" required>
+                                <option value="0"></option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- Queen Room -->
+                    <tr>
+                        <td>Queen Room</td>
+                        <td>$150</td>
+                        <td>
+                            <select name="queen_room_quantity" required>
+                                <option value="0"></option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- Single Room -->
+                    <tr>
+                        <td>Single Room</td>
+                        <td>$100</td>
+                        <td>
+                            <select name="single_room_quantity" required>
+                                <option value="0"></option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- Twin Room -->
+                    <tr>
+                        <td>Twin Room</td>
+                        <td>$120</td>
+                        <td>
+                            <select name="twin_room_quantity" required>
+                                <option value="0"></option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+      </table>
+        <div style="text-align: center">
+          <button type="submit" class="btn">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

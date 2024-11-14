@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmation Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #225cce;
+        }
+
+        .section p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 8px 0;
+        }
+
+        .section ul {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+
+        .section ul li {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            color: #fff;
+            background-color: #225cce;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 20px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background-color: #043c8b;
+        }
+
+        .btn:focus {
+            outline: none;
+        }
+
+        .details {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .details strong {
+            color: #225cce;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+    <h1>Reservation Confirmation</h1>
+
+    <!-- Guest Information -->
+    <h2>Guest Information</h2>
+    <p><strong>Name:</strong> {{ guest['first_name'] }} {{ guest['last_name'] }}</p>
+    <p><strong>Email:</strong> {{ guest['email'] }}</p>
+    <p><strong>Phone:</strong> {{ guest['phone_number'] }}</p>
+
+    <!-- Reservation Details -->
+    <h2>Reservation Details</h2>
+    <p><strong>Check-in Date:</strong> {{ checkin }}</p>
+    <p><strong>Check-out Date:</strong> {{ checkout }}</p>
+    
+    <!-- Rooms Selected -->
+    <h2>Rooms Selected</h2>
+    <ul>
+        {% for room_type, quantity in room_selection.items() %}
+            <li>{{ room_type }} - quantity: {{ quantity }}</li>
+        {% endfor %}
+    </ul>
+
+    <p><strong>Total Price:</strong> ${{ total_price }}</p>
+
+    <!-- Vehicle Information -->
+    <h2>Vehicle Information</h2>
+    <p><strong>Brand:</strong> {{ vehicle_brand or 'N/A' }}</p>
+    <p><strong>Type:</strong> {{ vehicle_type or 'N/A' }}</p>
+    <p><strong>Quantity:</strong> {{ vehicle_quantity or 0 }}</p>
+
+    <form method="post">
+        <button type="submit" class="btn">Confirm</button>
+    </form>
+</form>
+</body>
+</html>
