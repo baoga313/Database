@@ -7,13 +7,14 @@ CREATE TABLE `Guest` (
   `last_name` VARCHAR(50),
   `email` VARCHAR(100),
   `phone_number` VARCHAR(15),
+  `password` INT,
   PRIMARY KEY (`id`)
 );
 
 CREATE TABLE `Reservation` (
   `id` INT AUTO_INCREMENT,
   `guest_id` INT,
-  `payment_status` VARCHAR(100) NOT NULL ,
+  `payment_status` VARCHAR(100) NOT NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`guest_id`) REFERENCES `Guest`(`id`)
 );
@@ -26,17 +27,6 @@ CREATE TABLE `Room` (
   PRIMARY KEY (`id`)
 );
 
-CREATE TABLE `Room_reservation` (
-  `reservation_id` INT ,
-  `room_id` INT,
-  `check_in_date` DATE, 
-  `check_out_date` DATE,
-  `status` ENUM('Reserved', 'Check-in', 'Checked-out', 'Cancelled') NOT NULL,
-  PRIMARY KEY (`reservation_id`,`room_id`),
-  FOREIGN KEY (`reservation_id`) REFERENCES `Reservation`(`id`) ,
-  FOREIGN KEY (`room_id`) REFERENCES `Room`(`id`)
-);
-
 CREATE TABLE `Vehicles` (
   `id` INT AUTO_INCREMENT,
   `type` VARCHAR(50),
@@ -47,12 +37,26 @@ CREATE TABLE `Vehicles` (
   FOREIGN KEY (`room_id`) REFERENCES `Room`(`id`)
 );
 
-CREATE TABLE `Payment` (
+CREATE TABLE `Room_reservation` (
   `id` INT AUTO_INCREMENT,
   `reservation_id` INT,
+  `room_id` INT,
+  `vehicle_id` INT,
+  `check_in_date` DATE,
+  `check_out_date` DATE,
+  `status` ENUM('Reserved', 'Check-in') NOT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`reservation_id`) REFERENCES `Reservation`(`id`),
+  FOREIGN KEY (`room_id`) REFERENCES `Room`(`id`),
+  FOREIGN KEY (`vehicle_id`) REFERENCES `Vehicles`(`id`)
+);
+
+CREATE TABLE `Payment` (
+  `id` INT AUTO_INCREMENT,
+  `room_reservation_id` INT,
   `payment_method` ENUM ('Credit Card', 'PayPal', 'Cash', 'Debit Card'),
   `status` VARCHAR(50),
   `payment_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`reservation_id`) REFERENCES `Reservation`(`id`)
+  FOREIGN KEY (`room_reservation_id`) REFERENCES `Room_reservation`(`id`)
 );
