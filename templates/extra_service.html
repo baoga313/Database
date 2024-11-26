@@ -1,154 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Reservation Page</title>
+<html>
+<head>
+    <title>Extra Service</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-      }
-
-      .container {
-        max-width: 800px;
-        margin: 50px auto;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-      }
-
-      h1 {
-        text-align: center;
-        color: #333;
-        margin-bottom: 20px;
-      }
-
-      .form-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-      }
-
-      .form-column {
-        flex: 1;
-        min-width: 250px;
-      }
-
-      .form-group {
-        margin-bottom: 15px;
-      }
-
-      label {
-        display: block;
-        margin-bottom: 5px;
-        font-weight: bold;
-        color: #333;
-      }
-
-      /* Section Titles */
-      .section-title {
-        font-size: 18px;
-        font-weight: bold;
-        text-align: center;
-        color: black;
-        background-color: gainsboro;
-        padding: 10px;
-        margin-bottom: 15px;
-        border-radius: 5px;
-      }
-
-      input[type="text"],
-      input[type="email"],
-      input[type="tel"],
-      input[type="date"],
-      select {
-        width: 100%;
-        padding: 10px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        font-size: 14px;
-        box-sizing: border-box;
-      }
-
-      .btn {
-        display: block;
-        padding: 10px 20px;
-        color: #fff;
-        background-color: #225cce;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        text-align: center;
-        font-size: 16px;
-        margin-top: 20px;
-        width: 100%;
-        box-sizing: border-box;
-      }
-
-      .btn:hover {
-        background-color: #043c8b;
-      }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            max-width: 900px;
+            margin: 50px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        h2 {
+            color: #5cb85c;
+        }
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        input[type="date"], select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        input[type="number"] {
+            width: 60px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #5cb85c;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <div class="container">
-      <h1>Reservation Information</h1>
-      <form action="{{ url_for('extra_service') }}" method="post">
-        <div class="form-container">
-          <!-- Date Details -->
-          <div class="form-column">
-            <div class="section-title">Date Details</div>
-            <div class="form-group">
-              <label for="checkin">Check-in Date</label>
-              <input type="date" id="checkin" name="checkin" required />
-            </div>
-            <div class="form-group">
-              <label for="checkout">Check-out Date</label>
-              <input type="date" id="checkout" name="checkout" required />
-            </div>
-          </div>
+        <h1>Extra Service</h1>
+        <form method="POST" action="/extra_service">
+            <h2>Details</h2>
+            <label for="check_in_date">Check-in Date:</label>
+            <input type="date" name="check_in_date" required><br>
 
-          <!-- Vehicle Information -->
-          <div class="form-column">
-            <div class="section-title">Vehicle Information</div>
-            <div class="form-group">
-              <label for="vehicle_brand">Vehicle Brand</label>
-              <select id="vehicle_brand" name="vehicle_brand">
-                <option disabled selected value>Select Brand</option>
-                <option value="honda">Honda</option>
-                <option value="toyota">Toyota</option>
-                <option value="subaru">Subaru</option>
-                <option value="mercedes-benz">Mercedes Benz</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="vehicle_type">Vehicle Type</label>
-              <select id="vehicle_type" name="vehicle_type">
-                <option disabled selected value>Select Type</option>
-                <option value="sedan">Sedan</option>
-                <option value="hatchback">Hatchback</option>
-                <option value="suv">SUV</option>
-                <option value="coach bus">Coach Bus</option>
-              </select>
-            </div>
+            <label for="check_out_date">Check-out Date:</label>
+            <input type="date" name="check_out_date" required><br>
 
-            <div class="form-group">
-              <label for="vehicle_quantity">Vehicle Quantity</label>
-              <select id="vehicle_quantity" name="vehicle_quantity">
-                <option disabled selected value></option>
-                <option>1</option>
-                <option>2</option>
-                <option>3</option>
-                <option>4</option>
-                <option>5</option>
-              </select>
-            </div>
-          </div>
-        </div>
+            <h2>Vehicle Selection</h2>
+            <label for="brand">Brand:</label>
+            <select name="brand" required>
+            <option value="">Choose a brand</option>
+            <option value="Honda">Honda</option>
+            <option value="Toyota">Toyota</option>
+            <option value="BMW">BMW</option>
+            </select><br>
 
-        <button type="submit" class="btn">Confirm</button>
-      </form>
+            <label for="type">Type:</label>
+            <select name="type" required>
+            <option value="">Choose a type</option>
+            <option value="SUV">SUV</option>
+            <option value="Sedan">Sedan</option>
+            <option value="MiniVan">MiniVan</option>
+            </select><br>
+
+            <label for="quantity">Quantity:</label>
+            <input type="number" name="quantity" min="0" value="0"><br>
+
+            <br>
+            <button type="submit">Continue</button>
+        </form>
+        <a href="/home" class="back-link">Back to Home</a>
     </div>
-  </body>
+</body>
 </html>

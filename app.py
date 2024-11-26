@@ -1,166 +1,198 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-from db import save_guest, get_guest, save_reservation, get_reservation, get_db_connection
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from werkzeug.security import check_password_hash
+from models import get_user_by_email, create_user, get_reservations, update_reservation_status, create_reservation, add_room_to_reservation, add_vehicle_to_reservation, calculate_total_price, create_payment, VALID_STATUSES
 from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = "your_secret_key"
 
-# Secret key for session management
-app.secret_key = 'your_secret_key'
-
-# Define room prices 
-ROOM_PRICES = {
-    'king': 200,
-    'queen': 150,
-    'single': 100,
-    'twin': 120
-}
-
-# Route for Home Page
+# Routes
 @app.route('/')
-def front_page():
-    return render_template('home_page.html')
+def login():
+    return render_template('login.html')
 
+@app.route('/login', methods=['POST'])
+def login_post():
+    email = request.form['email']
+    password = request.form['password']
 
-# Route for Guest Information Page
-@app.route('/guest-form', methods=['GET', 'POST'])
-def guest_form():
+    #Get user details from database
+    user = get_user_by_email(email)
+    if user and check_password_hash(user['Password'], password):  
+        # Store GuestID in session
+        session['user_id'] = user['GuestID']  
+        session['user_email'] = user['Email']
+        return redirect(url_for('home'))
+    else:
+        flash('Invalid email or password', 'error')
+        return redirect(url_for('login'))
 
-    # Handle submit fro guest info
+@app.route('/signup')
+def signup():
+    return render_template('signup.html')
+
+@app.route('/signup', methods=['POST'])
+def signup_post():
+    first_name = request.form['first_name']
+    last_name = request.form['last_name']
+    email = request.form['email']
+    phone_number = request.form['phone_number']
+    password = request.form['password']
+    confirm_password = request.form['confirm_password']
+
+    if password != confirm_password:
+        flash("Passwords do not match")
+        return redirect(url_for('signup'))
+
+    try:
+        create_user(first_name, last_name, email, phone_number, password)
+        flash("Account created successfully")
+        return redirect(url_for('login'))
+    except Exception as e:
+        flash("Error: Email already exists")
+        return redirect(url_for('signup'))
+    
+@app.route('/logout')
+def logout():
+    # Clear the session and redirect to the login page
+    session.clear()
+    return redirect(url_for('login'))
+
+@app.route('/home')
+def home():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    # Get reservations for the logged-in user
+    reservations = get_reservations(session['user_id']) 
+    return render_template('home.html', reservations=reservations)
+
+@app.route('/update_status/<int:reservation_id>/<status>', methods=['GET', 'POST'])
+def update_status(reservation_id, status):
+    # Update the reservation status
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    if status not in VALID_STATUSES:
+        return redirect(url_for('home'))
+
+    try:
+        update_reservation_status(reservation_id, status)
+        
+    except Exception as e:
+        flash(f"Error updating reservation status: {e}", "error")
+
+    # Fetch the updated list of reservations
+    reservations = get_reservations(session['user_id'])
+
+    return render_template('home.html', reservations=reservations)
+
+@app.route('/make_reservation', methods=['GET', 'POST'])
+def make_reservation():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
-        first_name = request.form['first_name']
-        last_name = request.form['last_name']
-        email = request.form['email']
-        phone = request.form['phone']
+        # Retrieve selected quantities of rooms
+        rooms = [
+            {'RoomType': 'King Room', 'Quantity': int(request.form.get('king_quantity', 0))},
+            {'RoomType': 'Queen Room', 'Quantity': int(request.form.get('queen_quantity', 0))},
+            {'RoomType': 'Twin Room', 'Quantity': int(request.form.get('twin_quantity', 0))},
+            {'RoomType': 'Single Room', 'Quantity': int(request.form.get('single_quantity', 0))}
+        ]
 
-        # Save guest info and get guest_id
-        guest_id = save_guest(first_name, last_name, email, phone)
-        # Store guest_id in session
-        session['guest_id'] = guest_id  
+        # Check if at least one room is selected
+        if all(room['Quantity'] == 0 for room in rooms):
+            flash("Please select at least one room.", "error")
+            return redirect(url_for('make_reservation'))
 
-        return redirect(url_for('room_selection'))  
-    return render_template('guest_form.html')
-
-
-
-# Route for Room Selection Page
-@app.route('/room-selection', methods=['GET', 'POST'])
-def room_selection():
-    # Retrieve guest id
-    guest_id = session.get('guest_id')
-
-    # Redirect to guest_form if guest_id is missing
-    if not guest_id:
-        return redirect(url_for('guest_form'))  
-
-    # Handle room selection submission
-    if request.method == 'POST':
-        # Collect room quantities
-        room_selection = {
-            'king': int(request.form['king_room_quantity']),
-            'queen': int(request.form['queen_room_quantity']),
-            'single': int(request.form['single_room_quantity']),
-            'twin': int(request.form['twin_room_quantity']),
-        }
-        # Store room selection in session
-        session['room_selection'] = room_selection
+        # Store room reservation data for the next page
+        session['reservation_data'] = rooms
 
         return redirect(url_for('extra_service'))
 
-    return render_template('room_selection.html')
+    return render_template('make_reservation.html')
 
-
-
-# Route for Extra Service Page
-@app.route('/extra-service', methods=['GET', 'POST'])
+@app.route('/extra_service', methods=['GET', 'POST'])
 def extra_service():
-    # Retrieve guest id and room selection
-    guest_id = session.get('guest_id')
-    room_selection = session.get('room_selection')
-
-    # Redirect to room selection if data is missing
-    if not guest_id or not room_selection:
-        return redirect(url_for('room_selection')) 
-
-    # Handle extra services
     if request.method == 'POST':
-        # Retrieve form data
-        checkin = request.form['checkin']
-        checkout = request.form['checkout']
-        vehicle_brand = request.form.get('vehicle_brand', '')
-        vehicle_type = request.form.get('vehicle_type', '')
-        vehicle_quantity = int(request.form.get('vehicle_quantity', 0))
+        check_in_date = request.form['check_in_date']
+        check_out_date = request.form['check_out_date']
+        brand = request.form['brand']
+        vehicle_type = request.form['type']
+        quantity = int(request.form['quantity'])
 
-        # Convert checkin and checkout to datetime
-        checkin_date = datetime.strptime(checkin, '%Y-%m-%d')
-        checkout_date = datetime.strptime(checkout, '%Y-%m-%d')
+        # Save vehicle data to session 
+        vehicle_data = {'Brand': brand, 'Type': vehicle_type, 'Quantity': quantity}
+        session['vehicle_data'] = [vehicle_data]  # Store in session for confirmation page
 
-        # Calculate the number of nights
-        number_of_nights = (checkout_date - checkin_date).days
+        session['check_in_date'] = check_in_date
+        session['check_out_date'] = check_out_date
 
-        # Calculate total price 
-        total_price = sum(
-            ROOM_PRICES[room_type] * quantity * number_of_nights 
-            for room_type, quantity in room_selection.items()
-        )
-
-        # Save reservation 
-        reservation_id = save_reservation(
-            guest_id, checkin, checkout, room_selection, 
-            vehicle_brand, vehicle_type, vehicle_quantity, total_price
-        )
-
-        # Store both guest_id and reservation_id in session
-        session['checkin'] = checkin
-        session['checkout'] = checkout
-        session['reservation_id'] = reservation_id
-        session['total_price'] = total_price
-        session['vehicle_brand'] = vehicle_brand
-        session['vehicle_type'] = vehicle_type
-        session['vehicle_quantity'] = vehicle_quantity
-
-        return redirect(url_for('confirmation_page'))
-
+        return redirect(url_for('confirmation'))
     return render_template('extra_service.html')
 
-# Route for Confirmation Page
 @app.route('/confirmation', methods=['GET', 'POST'])
-def confirmation_page():
-    # Retrieve guest_id and reservation_id
-    guest_id = session.get('guest_id')
-    reservation_id = session.get('reservation_id')
+def confirmation():
+    if 'user_id' not in session or 'reservation_data' not in session:
+        return redirect(url_for('make_reservation'))
 
-     # Fetch guest and reservation details from the database
-    guest = get_guest(guest_id)
-    reservation = get_reservation(reservation_id)
+    user_email = session['user_email']
+    user = get_user_by_email(user_email)
 
-     # Get room selection and other data 
-    room_selection = session.get('room_selection')
-    total_price = session.get('total_price')
-    vehicle_brand = session.get('vehicle_brand')
-    vehicle_type = session.get('vehicle_type')
-    vehicle_quantity = session.get('vehicle_quantity')
-    checkin = session.get('checkin') 
-    checkout = session.get('checkout')  
+    #Load reservation data from session
+    rooms = session['reservation_data']
+    vehicles = session.get('vehicle_data', [])  
+    check_in_date = session['check_in_date']
+    check_out_date = session['check_out_date']
 
     if request.method == 'POST':
-        return redirect(url_for('payment_page'))  
+        reservation_id = create_reservation(session['user_id'])
 
-    return render_template('confirmation_page.html', 
-                           guest=guest, 
-                           reservation=reservation, 
-                           room_selection=room_selection,
-                           total_price=total_price,
-                           vehicle_brand=vehicle_brand,
-                           vehicle_type=vehicle_type,
-                           vehicle_quantity=vehicle_quantity,
-                           checkin=checkin, checkout=checkout)  
+        # Add rooms
+        for room in rooms:
+            if room['Quantity'] > 0:
+                add_room_to_reservation(reservation_id, room['RoomType'], room['Quantity'], check_in_date, check_out_date)
 
+        # Add vehicles
+        for vehicle in vehicles:
+            add_vehicle_to_reservation(reservation_id, vehicle['Brand'], vehicle['Type'], vehicle['Quantity'])
 
-# Route for Payment Page
+        # Save reservation_id in session to access it in the payment page
+        session['reservation_id'] = reservation_id
+
+        return redirect(url_for('payment'))
+
+    return render_template('confirmation.html', user=user, rooms=rooms, vehicles=vehicles, check_in_date=check_in_date, check_out_date=check_out_date)
+
 @app.route('/payment', methods=['GET', 'POST'])
-def payment_page():
-    return render_template('payment_page.html')
+def payment():
+    if 'user_id' not in session or 'reservation_id' not in session:
+        return redirect(url_for('make_reservation'))  # Redirect if no reservation found
 
+
+    reservation_id = session['reservation_id']
+    total_price = calculate_total_price(reservation_id)
+
+    if request.method == 'POST':
+        payment_method = request.form['payment_method']
+        payment_status = 'Completed'
+        payment_date = datetime.today().strftime('%Y-%m-%d')
+
+        # Store the payment information in the database
+        create_payment(reservation_id, payment_method, payment_status, payment_date)
+
+        # Update the reservation status
+        update_reservation_status(reservation_id, 'Completed')
+
+        return redirect(url_for('home'))  # Redirect to the homepage or confirmation page
+
+    return render_template('payment.html', total_price=total_price)
+
+@app.route('/cancel_payment')
+def cancel_payment():
+    # Simply redirect to the home page without making any changes to the database
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)

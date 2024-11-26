@@ -1,77 +1,202 @@
-from sqlalchemy import Column, Integer, String, Date, Enum, ForeignKey, DECIMAL
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from db import engine
+from db import get_db
+from werkzeug.security import generate_password_hash
+from datetime import datetime
 
-# Create the base class for the ORM
-Base = declarative_base()
+# Fetch user from the database based on email
+def get_user_by_email(email):
+    db = get_db()  
+    try:
+        query = "SELECT * FROM Guest WHERE Email = %s"
+        cursor = db.cursor(dictionary=True)  
+        cursor.execute(query, (email,))
+        user = cursor.fetchone()
+        return user
+    finally:
+        cursor.close()
+        db.close()
 
-# Define the Guest model
-class Guest(Base):
-    __tablename__ = 'Guest'
+# Create a new user in the database
+def create_user(first_name, last_name, email, phone_number, password):
+    db = get_db()
+    try:
+        query = """
+            INSERT INTO Guest (FirstName, LastName, Email, PhoneNumber, Password)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        hashed_password = generate_password_hash(password)  
+        cursor = db.cursor()
+        cursor.execute(query, (first_name, last_name, email, phone_number, hashed_password))
+        db.commit()
+    finally:
+        cursor.close()
+        db.close()
 
-    # Columns for guest table
-    id = Column(Integer, primary_key=True)
-    first_name = Column(String(50), nullable=False)
-    last_name = Column(String(50), nullable=False)
-    email = Column(String(100), unique=True, nullable=False)
-    phone_number = Column(String(15))
+# Fetch reservations for a specific user
+def get_reservations(user_id):
+    db = get_db()
+    try:
+        query = """
+            SELECT Reservation.ReservationID, RoomReservation.CheckInDate, 
+                   RoomReservation.CheckOutDate, Reservation.PaymentStatus
+            FROM Reservation
+            JOIN RoomReservation ON Reservation.ReservationID = RoomReservation.ReservationID
+            WHERE Reservation.GuestID = %s
+        """
+        cursor = db.cursor(dictionary=True)
+        cursor.execute(query, (user_id,))
+        reservations = cursor.fetchall()
+        return reservations
+    finally:
+        cursor.close()
+        db.close()
 
-# Define the Room model
-class Room(Base):
-    __tablename__ = 'Room'
+# Unified valid statuses
+VALID_STATUSES = ['Pending', 'Completed', 'Cancelled', 'Checked In']
 
-    # Columns for room table
-    id = Column(Integer, primary_key=True)
-    type = Column(String(100))
-    price_per_night = Column(DECIMAL(10, 2))
-    capacity = Column(Integer)
+# Update reservation status
+def update_reservation_status(reservation_id, status):
+    if status not in VALID_STATUSES:
+        raise ValueError("Invalid status value")
 
-# Define the Reservation model
-class Reservation(Base):
-    __tablename__ = 'Reservation'
+    db = get_db()  
+    try:
+        # Update RoomReservation Status
+        room_reservation_query = """
+            UPDATE RoomReservation 
+            SET Status = %s 
+            WHERE ReservationID = %s
+        """
+        cursor = db.cursor()
+        cursor.execute(room_reservation_query, (status, reservation_id))
+        db.commit()
 
-    # Columns for the reservation table
-    id = Column(Integer, primary_key=True)
-    guest_id = Column(Integer, ForeignKey('Guest.id'))
-    payment_status = Column(String(100), nullable=False)
-    guest = relationship("Guest", back_populates="reservations")
+        # Update Reservation Status
+        reservation_query = """
+            UPDATE Reservation 
+            SET PaymentStatus = %s 
+            WHERE ReservationID = %s
+        """
+        cursor.execute(reservation_query, (status, reservation_id))
+        db.commit()
 
-# Define the relationship between reservation and guest
-Guest.reservations = relationship("Reservation", order_by=Reservation.id, back_populates="guest")
+        # Update Payment Status 
+        payment_query = """
+            UPDATE Payment 
+            SET Status = %s 
+            WHERE ReservationID = %s
+        """
+        cursor.execute(payment_query, (status, reservation_id))
+        db.commit()
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating status: {e}")
+        raise e
+    finally:
+        cursor.close()
+        db.close()
 
-# Define the RoomReservation model
-class RoomReservation(Base):
-    __tablename__ = 'Room_reservation'
+# Create a new reservation
+def create_reservation(user_id):
+    db = get_db()
+    try:
+        query = "INSERT INTO Reservation (GuestID, PaymentStatus) VALUES (%s, 'Pending')"
+        cursor = db.cursor()
+        cursor.execute(query, (user_id,))
+        db.commit()
+        return cursor.lastrowid  # Return the ReservationID
+    finally:
+        cursor.close()
+        db.close()
 
-    # Columns for room_reservation table
-    reservation_id = Column(Integer, ForeignKey('Reservation.id'), primary_key=True)
-    room_id = Column(Integer, ForeignKey('Room.id'), primary_key=True)
-    check_in_date = Column(Date)
-    check_out_date = Column(Date)
-    status = Column(Enum('Reserved', 'Check-in', 'Checked-out', 'Cancelled'), nullable=False)
+# Add room details to a reservation
+# Add rooms to a reservation
+def add_room_to_reservation(reservation_id, room_type, quantity, check_in_date, check_out_date):
+    db = get_db()
+    try:
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT RoomID FROM Room WHERE RoomType = %s", (room_type,))
+        room = cursor.fetchone()
+        if room:
+            query = """
+                INSERT INTO RoomReservation (ReservationID, RoomID, CheckInDate, CheckOutDate, Status, Quantity)
+                VALUES (%s, %s, %s, %s, 'Pending', %s)
+            """
+            cursor.execute(query, (reservation_id, room['RoomID'], check_in_date, check_out_date, quantity))
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error adding room to reservation: {e}")
 
-# Define the Vehicles model
-class Vehicle(Base):
-    __tablename__ = 'Vehicles'
+# Add vehicles to a reservation
+def add_vehicle_to_reservation(reservation_id, brand, vehicle_type, quantity):
+    db = get_db()
+    try:
+        cursor = db.cursor(dictionary=True)
+        
+        # Fetch VehicleID
+        cursor.execute("SELECT VehicleID FROM Vehicle WHERE Brand = %s AND Type = %s", (brand, vehicle_type))
+        vehicle = cursor.fetchone()
 
-    # Columns definition for the Vehicles table
-    id = Column(Integer, primary_key=True)
-    type = Column(String(50))
-    brand = Column(String(50))
-    color = Column(String(40))
-    room_id = Column(Integer, ForeignKey('Room.id'))
+        if vehicle:
+            query = """
+                INSERT INTO VehicleReservation (ReservationID, VehicleID, Quantity)
+                VALUES (%s, %s, %s)
+            """
+            cursor.execute(query, (reservation_id, vehicle['VehicleID'], quantity))
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error adding vehicle to reservation: {e}")
+    finally:
+        cursor.close()
+        db.close()
 
-# Define the Payment model
-class Payment(Base):
-    __tablename__ = 'Payment'
+# Function to create a payment entry
+def create_payment(reservation_id, payment_method, payment_status, payment_date):
+    if payment_status not in VALID_STATUSES:
+        raise ValueError("Invalid payment status value")
+    
+    db = get_db()
+    try:
+        query = """
+            INSERT INTO Payment (ReservationID, PaymentMethod, Status, PaymentDate)
+            VALUES (%s, %s, %s, %s)
+        """
+        cursor = db.cursor()
+        cursor.execute(query, (reservation_id, payment_method, payment_status, payment_date))
+        db.commit()
 
-    # Columns for Payment table
-    id = Column(Integer, primary_key=True)
-    reservation_id = Column(Integer, ForeignKey('Reservation.id'))
-    payment_method = Column(Enum('Credit Card', 'PayPal', 'Cash', 'Debit Card'))
-    status = Column(String(50))
-    payment_date = Column(Date)
+    finally:
+        cursor.close()
+        db.close()
 
-# Create tables if they don't exist
-Base.metadata.create_all(engine)
+# Function to calculate the total price for a reservation
+def calculate_total_price(reservation_id):
+    db = get_db()
+    total_price = 0
+    try:
+        # Get room reservations and calculate the total price
+        query = """
+            SELECT r.PricePerNight, rr.Quantity, rr.CheckInDate, rr.CheckOutDate
+            FROM RoomReservation rr
+            JOIN Room r ON rr.RoomID = r.RoomID
+            WHERE rr.ReservationID = %s
+        """
+        cursor = db.cursor(dictionary=True)
+        cursor.execute(query, (reservation_id,))
+        room_reservations = cursor.fetchall()
+
+        for room in room_reservations:
+            room_price = room['PricePerNight']
+            quantity = room['Quantity']
+            check_in_date = room['CheckInDate']  
+            check_out_date = room['CheckOutDate']  
+            stay_duration = (check_out_date - check_in_date).days
+            total_price += room_price * quantity * stay_duration
+
+    finally:
+        cursor.close()
+        db.close()
+    
+    return total_price

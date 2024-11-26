@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Make Reservation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            max-width: 900px;
+            margin: 50px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #5cb85c;
+            color: white;
+        }
+        input[type="number"] {
+            width: 50px;
+            padding: 5px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #5cb85c;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Make a Reservation</h1>
+        <form method="POST" action="/make_reservation">
+            <table>
+                <tr>
+                    <th>Room Type</th>
+                    <th>Number of Guests</th>
+                    <th>Price per Night</th>
+                    <th>Quantity</th>
+                </tr>
+                <tr>
+                    <td>King Room</td>
+                    <td>2</td>
+                    <td>$400</td>
+                    <td>
+                        <input type="number" name="king_quantity" min="0" value="0">
+                    </td>
+                </tr>
+                <tr>
+                    <td>Queen Room</td>
+                    <td>2</td>
+                    <td>$300</td>
+                    <td>
+                        <input type="number" name="queen_quantity" min="0" value="0">
+                    </td>
+                </tr>
+                <tr>
+                    <td>Twin Room</td>
+                    <td>2</td>
+                    <td>$200</td>
+                    <td>
+                        <input type="number" name="twin_quantity" min="0" value="0">
+                    </td>
+                </tr>
+                <tr>
+                    <td>Single Room</td>
+                    <td>1</td>
+                    <td>$100</td>
+                    <td>
+                        <input type="number" name="single_quantity" min="0" value="0">
+                    </td>
+                </tr>
+            </table>
+            <br>
+            <button type="submit">Continue</button>
+        </form>
+        <a href="/home" class="back-link">Back to Home</a>
+    </div>
+</body>
+</html>
