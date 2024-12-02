@@ -55,52 +55,59 @@
     <div class="container">
         <h1>Your Reservations</h1>
         <table>
-            <tr>
-                <th>Reservation ID</th>
-                <th>Check-In</th>
-                <th>Check-Out</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-            {% for res in reservations %}
-            <tr>
-                <td>{{ res.ReservationID }}</td>
-                <td>{{ res.CheckInDate }}</td>
-                <td>{{ res.CheckOutDate }}</td>
-                <td>{{ res.PaymentStatus }}</td>
-                <td class="actions">
-                    {% if res.PaymentStatus == 'Pending' %}
-                    <form method="POST" action="/update_status/{{ res.ReservationID }}/Completed" style="display: inline;">
-                        <button type="submit" style="background: none; border: none; color: #5cb85c; cursor: pointer;">Confirm Payment</button>
-                    </form>
-                    |
-                    <form method="POST" action="/update_status/{{ res.ReservationID }}/Cancelled" style="display: inline;">
-                        <button type="submit" style="background: none; border: none; color: #5cb85c; cursor: pointer;">Cancel</button>
-                    </form>
-                    {% elif res.PaymentStatus == 'Completed' %}
-                    <form method="POST" action="/update_status/{{ res.ReservationID }}/Checked In" style="display: inline;">
-                        <button type="submit" style="background: none; border: none; color: #5cb85c; cursor: pointer;">Check In</button>
-                    </form>
-                    |
-                    <form method="POST" action="/update_status/{{ res.ReservationID }}/Cancelled" style="display: inline;">
-                        <button type="submit" style="background: none; border: none; color: #5cb85c; cursor: pointer;">Cancel</button>
-                    </form>
-                    {% elif res.PaymentStatus == 'Checked In' %}
-                    Checked In
-                    {% else %}
-                    N/A
-                    {% endif %}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="5" class="no-reservations">No reservations available.</td>
-            </tr>
-            {% endfor %}
+            <thead>
+                <tr>
+                    <th>Reservation ID</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if reservations %}
+                    {% for res in reservations %}
+                    <tr>
+                        <td>{{ res.ReservationID }}</td>
+                        <td>{{ res.CheckInDate }}</td>
+                        <td>{{ res.CheckOutDate }}</td>
+                        <td>{{ res.ReservationStatus }}</td>
+                        <td class="actions">
+                            {% if res.ReservationStatus == 'Pending' %}
+                            <form method="POST" action="/update_status/{{ res.ReservationID }}/Reserved" style="display: inline;">
+                                <button type="submit">Confirm Payment</button>
+                            </form>
+                            |
+                            <form method="POST" action="/update_status/{{ res.ReservationID }}/Cancelled" style="display: inline;">
+                                <button type="submit">Cancel</button>
+                            </form>
+                            {% elif res.ReservationStatus == 'Reserved' %}
+                            <form method="POST" action="/update_status/{{ res.ReservationID }}/Checked In" style="display: inline;">
+                                <button type="submit">Check In</button>
+                            </form>
+                            |
+                            <form method="POST" action="/update_status/{{ res.ReservationID }}/Cancelled" style="display: inline;">
+                                <button type="submit">Cancel</button>
+                            </form>
+                            {% elif res.ReservationStatus == 'Checked In' %}
+                            Checked In
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="5" class="no-reservations">No reservations available.</td>
+                </tr>
+                {% endif %}
+            </tbody>
         </table>
-        <br>
-        <a href="/make_reservation">Make a Reservation</a> | 
-        <a href="/logout">Logout</a>
+        <div class="footer-links">
+            <a href="/make_reservation">Make a Reservation</a> | 
+            <a href="/logout">Logout</a>
+        </div>
     </div>
 </body>
 </html>

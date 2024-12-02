@@ -1,104 +1,106 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Extra Service</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            width: 80%;
-            max-width: 900px;
-            margin: 50px auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        h2 {
-            color: #5cb85c;
-        }
-        label {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        input[type="date"], select, input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        input[type="number"] {
-            width: 60px;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background-color: #5cb85c;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #4cae4c;
-        }
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: #5cb85c;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        width: 80%;
+        max-width: 900px;
+        margin: 50px auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      h2 {
+        color: #5cb85c;
+      }
+      label {
+        font-weight: bold;
+        margin-top: 10px;
+      }
+      input[type="date"],
+      select,
+      input[type="number"] {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+      input[type="number"] {
+        width: 60px;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        background-color: #5cb85c;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #4cae4c;
+      }
+      .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        color: #5cb85c;
+        text-decoration: none;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Extra Service</h1>
-        <form method="POST" action="/extra_service">
-            <h2>Details</h2>
-            <label for="check_in_date">Check-in Date:</label>
-            <input type="date" name="check_in_date" required><br>
+      <h1>Extra Service</h1>
+      <form method="POST" action="/extra_service">
+        <h2>Details</h2>
+        <label for="check_in_date">Check-in Date:</label>
+        <input type="date" name="check_in_date" required /><br />
 
-            <label for="check_out_date">Check-out Date:</label>
-            <input type="date" name="check_out_date" required><br>
+        <label for="check_out_date">Check-out Date:</label>
+        <input type="date" name="check_out_date" required /><br />
 
-            <h2>Vehicle Selection</h2>
-            <label for="brand">Brand:</label>
-            <select name="brand" required>
-            <option value="">Choose a brand</option>
-            <option value="Honda">Honda</option>
-            <option value="Toyota">Toyota</option>
-            <option value="BMW">BMW</option>
-            </select><br>
+        <h2>Vehicle Selection</h2>
+        <label for="brand">Brand:</label>
+        <select name="brand" required>
+          <option value="" disabled>Choose a brand</option>
+          <option value="Honda">Honda</option>
+          <option value="Toyota">Toyota</option>
+          <option value="BMW">BMW</option></select
+        ><br />
 
-            <label for="type">Type:</label>
-            <select name="type" required>
-            <option value="">Choose a type</option>
-            <option value="SUV">SUV</option>
-            <option value="Sedan">Sedan</option>
-            <option value="MiniVan">MiniVan</option>
-            </select><br>
+        <label for="type">Type:</label>
+        <select name="type" required>
+          <option value="" disabled>Choose a type</option>
+          <option value="SUV">SUV</option>
+          <option value="Sedan">Sedan</option>
+          <option value="MiniVan">MiniVan</option></select
+        ><br />
 
-            <label for="quantity">Quantity:</label>
-            <input type="number" name="quantity" min="0" value="0"><br>
+        <label for="quantity">Quantity:</label>
+        <input type="number" name="quantity" min="0" max="10" value="0" /><br />
 
-            <br>
-            <button type="submit">Continue</button>
-        </form>
-        <a href="/home" class="back-link">Back to Home</a>
+        <br />
+        <button type="submit">Continue</button>
+      </form>
+      <a href="/home" class="back-link">Back to Home</a>
     </div>
-</body>
+  </body>
 </html>

@@ -1,5 +1,4 @@
 from db import get_db
-from werkzeug.security import generate_password_hash
 from datetime import datetime
 
 # Fetch user from the database based on email
@@ -22,10 +21,9 @@ def create_user(first_name, last_name, email, phone_number, password):
         query = """
             INSERT INTO Guest (FirstName, LastName, Email, PhoneNumber, Password)
             VALUES (%s, %s, %s, %s, %s)
-        """
-        hashed_password = generate_password_hash(password)  
+        """  
         cursor = db.cursor()
-        cursor.execute(query, (first_name, last_name, email, phone_number, hashed_password))
+        cursor.execute(query, (first_name, last_name, email, phone_number, password))
         db.commit()
     finally:
         cursor.close()
@@ -36,11 +34,14 @@ def get_reservations(user_id):
     db = get_db()
     try:
         query = """
-            SELECT Reservation.ReservationID, RoomReservation.CheckInDate, 
-                   RoomReservation.CheckOutDate, Reservation.PaymentStatus
+            SELECT Reservation.ReservationID, 
+                   MIN(RoomReservation.CheckInDate) AS CheckInDate, 
+                   MAX(RoomReservation.CheckOutDate) AS CheckOutDate, 
+                   Reservation.Status AS ReservationStatus
             FROM Reservation
             JOIN RoomReservation ON Reservation.ReservationID = RoomReservation.ReservationID
             WHERE Reservation.GuestID = %s
+            GROUP BY Reservation.ReservationID, Reservation.Status
         """
         cursor = db.cursor(dictionary=True)
         cursor.execute(query, (user_id,))
@@ -51,7 +52,7 @@ def get_reservations(user_id):
         db.close()
 
 # Unified valid statuses
-VALID_STATUSES = ['Pending', 'Completed', 'Cancelled', 'Checked In']
+VALID_STATUSES = ['Pending', 'Reserved', 'Checked In', 'Cancelled']
 
 # Update reservation status
 def update_reservation_status(reservation_id, status):
@@ -73,19 +74,26 @@ def update_reservation_status(reservation_id, status):
         # Update Reservation Status
         reservation_query = """
             UPDATE Reservation 
-            SET PaymentStatus = %s 
+            SET Status = %s 
             WHERE ReservationID = %s
         """
         cursor.execute(reservation_query, (status, reservation_id))
         db.commit()
 
         # Update Payment Status 
+        if status == 'Cancelled':
+            payment_status = 'Cancelled'
+        elif status in ['Reserved', 'Checked In']:
+            payment_status = 'Completed'
+        else:
+            payment_status = 'Pending'
+
         payment_query = """
             UPDATE Payment 
             SET Status = %s 
             WHERE ReservationID = %s
         """
-        cursor.execute(payment_query, (status, reservation_id))
+        cursor.execute(payment_query, (payment_status, reservation_id))
         db.commit()
         
     except Exception as e:
@@ -100,7 +108,7 @@ def update_reservation_status(reservation_id, status):
 def create_reservation(user_id):
     db = get_db()
     try:
-        query = "INSERT INTO Reservation (GuestID, PaymentStatus) VALUES (%s, 'Pending')"
+        query = "INSERT INTO Reservation (GuestID, Status) VALUES (%s, 'Pending')"
         cursor = db.cursor()
         cursor.execute(query, (user_id,))
         db.commit()
@@ -152,24 +160,41 @@ def add_vehicle_to_reservation(reservation_id, brand, vehicle_type, quantity):
         cursor.close()
         db.close()
 
+# Define valid payment statuses
+VALID_PAYMENT_STATUS = ['Pending', 'Completed', 'Cancelled']
+
 # Function to create a payment entry
-def create_payment(reservation_id, payment_method, payment_status, payment_date):
-    if payment_status not in VALID_STATUSES:
-        raise ValueError("Invalid payment status value")
-    
+def create_payment(reservation_id, payment_method, payment_status, payment_date, total_price):
     db = get_db()
+    cursor = db.cursor()
+
+    # Ensure the payment status is valid
+    if payment_status not in VALID_PAYMENT_STATUS:
+        raise ValueError(f"Invalid payment status: {payment_status}")
+    
     try:
         query = """
-            INSERT INTO Payment (ReservationID, PaymentMethod, Status, PaymentDate)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO Payment (ReservationID, PaymentMethod, Status, PaymentDate, TotalPrice)
+            VALUES (%s, %s, %s, %s, %s)
         """
         cursor = db.cursor()
-        cursor.execute(query, (reservation_id, payment_method, payment_status, payment_date))
-        db.commit()
+        cursor.execute(query, (reservation_id, payment_method, payment_status, payment_date, total_price))
 
+        # If payment is completed, update the reservation status to Reserved
+        if payment_status == 'Completed':
+            reservation_query = """
+                UPDATE Reservation 
+                SET Status = 'Reserved'
+                WHERE ReservationID = %s
+            """
+            cursor.execute(reservation_query, (reservation_id,))
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
     finally:
         cursor.close()
-        db.close()
 
 # Function to calculate the total price for a reservation
 def calculate_total_price(reservation_id):
@@ -193,7 +218,8 @@ def calculate_total_price(reservation_id):
             check_in_date = room['CheckInDate']  
             check_out_date = room['CheckOutDate']  
             stay_duration = (check_out_date - check_in_date).days
-            total_price += room_price * quantity * stay_duration
+            if stay_duration > 0:
+                total_price += room_price * quantity * stay_duration
 
     finally:
         cursor.close()

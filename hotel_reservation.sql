@@ -32,7 +32,7 @@ CREATE TABLE Vehicle (
 CREATE TABLE Reservation (
     ReservationID INT AUTO_INCREMENT PRIMARY KEY,
     GuestID INT NOT NULL,
-    PaymentStatus ENUM('Pending', 'Completed', 'Cancelled') NOT NULL,
+    Status ENUM('Pending', 'Reserved', 'Checked In', 'Cancelled') NOT NULL,
     FOREIGN KEY (GuestID) REFERENCES Guest(GuestID)
 );
 
@@ -43,7 +43,7 @@ CREATE TABLE RoomReservation (
     RoomID INT NOT NULL,
     CheckInDate DATE NOT NULL,
     CheckOutDate DATE NOT NULL,
-    Status ENUM('Pending', 'Completed', 'Cancelled') NOT NULL,
+    Status ENUM('Pending', 'Reserved', 'Checked In', 'Cancelled') NOT NULL,
     Quantity INT NOT NULL,
     FOREIGN KEY (ReservationID) REFERENCES Reservation(ReservationID),
     FOREIGN KEY (RoomID) REFERENCES Room(RoomID)
@@ -66,6 +66,7 @@ CREATE TABLE Payment (
     PaymentMethod ENUM('Credit Card', 'Debit Card', 'PayPal') NOT NULL,
     Status ENUM('Pending', 'Completed', 'Cancelled') NOT NULL,
     PaymentDate DATE NOT NULL,
+    TotalPrice DECIMAL(10, 2) NOT NULL,
     FOREIGN KEY (ReservationID) REFERENCES Reservation(ReservationID)
 );
 

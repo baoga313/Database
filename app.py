@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
-from werkzeug.security import check_password_hash
 from models import get_user_by_email, create_user, get_reservations, update_reservation_status, create_reservation, add_room_to_reservation, add_vehicle_to_reservation, calculate_total_price, create_payment, VALID_STATUSES
 from datetime import datetime
-
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 
@@ -18,14 +16,12 @@ def login_post():
 
     #Get user details from database
     user = get_user_by_email(email)
-    if user and check_password_hash(user['Password'], password):  
-        # Store GuestID in session
-        session['user_id'] = user['GuestID']  
-        session['user_email'] = user['Email']
-        return redirect(url_for('home'))
-    else:
-        flash('Invalid email or password', 'error')
-        return redirect(url_for('login'))
+      
+    # Store GuestID in session
+    session['user_id'] = user['GuestID']  
+    session['user_email'] = user['Email']
+    return redirect(url_for('home'))
+    
 
 @app.route('/signup')
 def signup():
@@ -41,15 +37,13 @@ def signup_post():
     confirm_password = request.form['confirm_password']
 
     if password != confirm_password:
-        flash("Passwords do not match")
         return redirect(url_for('signup'))
 
     try:
         create_user(first_name, last_name, email, phone_number, password)
-        flash("Account created successfully")
         return redirect(url_for('login'))
+    
     except Exception as e:
-        flash("Error: Email already exists")
         return redirect(url_for('signup'))
     
 @app.route('/logout')
@@ -168,8 +162,7 @@ def confirmation():
 @app.route('/payment', methods=['GET', 'POST'])
 def payment():
     if 'user_id' not in session or 'reservation_id' not in session:
-        return redirect(url_for('make_reservation'))  # Redirect if no reservation found
-
+        return redirect(url_for('make_reservation'))
 
     reservation_id = session['reservation_id']
     total_price = calculate_total_price(reservation_id)
@@ -179,13 +172,14 @@ def payment():
         payment_status = 'Completed'
         payment_date = datetime.today().strftime('%Y-%m-%d')
 
-        # Store the payment information in the database
-        create_payment(reservation_id, payment_method, payment_status, payment_date)
+        # Store payment in the database
+        create_payment(reservation_id, payment_method, payment_status, payment_date, total_price)
+            
+        # Update reservation and room status
+        update_reservation_status(reservation_id, 'Reserved')
+            
 
-        # Update the reservation status
-        update_reservation_status(reservation_id, 'Completed')
-
-        return redirect(url_for('home'))  # Redirect to the homepage or confirmation page
+        return redirect(url_for('home'))
 
     return render_template('payment.html', total_price=total_price)
 
